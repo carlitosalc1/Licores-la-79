@@ -1,149 +1,233 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
 import { BreadcrumbItem } from '@/types';
-import { Head, useForm, router } from '@inertiajs/vue3';
-import { computed, watch } from 'vue';
-
-interface Producto {
-  id: number;
-  nombre: string;
-}
+import AppLayout from '@/layouts/AppLayout.vue';
+import { useForm, router, Head } from '@inertiajs/vue3';
+import { computed, watch, ref } from 'vue';
+import InputError from '@/components/InputError.vue';
 
 interface Compra {
-  id: number;
+    id: number;
+}
+
+interface Producto {
+    id: number;
+    nombre: string;
+    precio_compra: number;
 }
 
 interface DetalleCompra {
-  id: number;
-  producto_id: number;
-  compra_id: number;
-  cantidad: number;
-  precio_unitario: number;
-  subtotal: number;
+    id: number;
+    compra_id: number;
+    producto_id: number;
+    cantidad: number;
+    precio_unitario: number;
+    subtotal: number;
+    impuesto_iva: number;
+    total_pagar: number;
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Detalle Compras', href: '/detalle_compras' },
-  { title: 'Editar Detalle', href: '#' },
-];
-
+// Props que el controlador de Laravel envía a este componente Vue
 const props = defineProps<{
-  productos: Producto[];
-  compras: Compra[];
-  detalle: DetalleCompra;
+    detalleCompra: DetalleCompra;
+    compras: Compra[];
+    productos: Producto[];
 }>();
 
+// Breadcrumbs para la navegación
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Detalles de Compra', href: '/detalle_compras' },
+    { title: `Editar Detalle: ${props.detalleCompra.id}`, href: '#' },
+];
+
+// Inicialización del formulario con los valores del detalle de compra existente
 const form = useForm({
-  producto_id: props.detalle.producto_id,
-  compra_id: props.detalle.compra_id,
-  cantidad: props.detalle.cantidad,
-  precio_unitario: props.detalle.precio_unitario,
-  subtotal: props.detalle.subtotal,
+    compra_id: props.detalleCompra.compra_id,
+    producto_id: String(props.detalleCompra.producto_id), // Convertir a string para v-model en select
+    cantidad: props.detalleCompra.cantidad,
+    precio_unitario: props.detalleCompra.precio_unitario,
+    subtotal: props.detalleCompra.subtotal,
+    impuesto_iva: props.detalleCompra.impuesto_iva,
+    total_pagar: props.detalleCompra.total_pagar,
 });
 
-const calcularSubtotal = () => {
-  const cantidad = Number(form.cantidad);
-  const precio_unitario = Number(form.precio_unitario);
-  form.subtotal = cantidad * precio_unitario;
+// Variables reactivas para los valores de display formateados
+const displayPrecioUnitario = ref('0');
+const displaySubtotal = ref('0');
+const displayImpuestoIva = ref('0');
+const displayTotalPagar = ref('0');
+
+const selectedProduct = computed(() => {
+    return props.productos.find(p => p.id === Number(form.producto_id));
+});
+
+// Función para recalcular subtotal, impuesto_iva y total_pagar
+const recalculateTotals = () => {
+    // Asegurarse de que precio_unitario y cantidad sean números válidos
+    const currentPrecioUnitario = typeof form.precio_unitario === 'string' ? parseFloat(form.precio_unitario) : form.precio_unitario;
+    const currentCantidad = typeof form.cantidad === 'string' ? parseFloat(form.cantidad) : form.cantidad;
+
+    if (!isNaN(currentPrecioUnitario) && !isNaN(currentCantidad) && currentPrecioUnitario >= 0 && currentCantidad >= 0) {
+        form.subtotal = currentCantidad * currentPrecioUnitario;
+        form.impuesto_iva = form.subtotal * 0.19; // IVA del 19%
+        form.total_pagar = form.subtotal + form.impuesto_iva;
+    } else {
+        form.subtotal = 0;
+        form.impuesto_iva = 0;
+        form.total_pagar = 0;
+    }
 };
 
-const precioUnitarioVisible = computed({
-  get: () => {
-    return form.precio_unitario
-      ? Number(form.precio_unitario).toLocaleString('es-CO')
-      : '';
-  },
-  set: (value: string) => {
-    const raw = value.replace(/\./g, '').replace(/[^0-9]/g, '');
-    form.precio_unitario = Number(raw);
-    calcularSubtotal();
-  },
+// Watcher para precargar precio_unitario cuando cambia el producto
+watch(() => form.producto_id, () => {
+    if (selectedProduct.value) {
+        form.precio_unitario = selectedProduct.value.precio_compra;
+    } else {
+        form.precio_unitario = 0;
+    }
+    recalculateTotals(); // Recalcular totales después de actualizar el precio unitario
 });
 
-// Recalcular subtotal si cantidad cambia
-watch(() => form.cantidad, calcularSubtotal);
+// Watcher para recalcular subtotal, impuesto_iva y total_pagar cuando cambian cantidad o precio_unitario
+watch([() => form.cantidad, () => form.precio_unitario], recalculateTotals, { immediate: true }); // Ejecutar inmediatamente al montar el componente
 
+// Watchers para mantener las variables de display sincronizadas y formateadas
+watch(() => form.precio_unitario, (newValue) => {
+    displayPrecioUnitario.value = newValue === 0 ? '0' : newValue.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}, { immediate: true });
+
+watch(() => form.subtotal, (newValue) => {
+    displaySubtotal.value = newValue === 0 ? '0' : newValue.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}, { immediate: true });
+
+watch(() => form.impuesto_iva, (newValue) => {
+    displayImpuestoIva.value = newValue === 0 ? '0' : newValue.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}, { immediate: true });
+
+watch(() => form.total_pagar, (newValue) => {
+    displayTotalPagar.value = newValue === 0 ? '0' : newValue.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}, { immediate: true });
+
+
+// Función para limpiar y convertir el input de texto a un número
+const formatNumberInput = (field: 'precio_unitario') => {
+    let cleanedValue;
+    if (field === 'precio_unitario') {
+        cleanedValue = displayPrecioUnitario.value.replace(/[^0-9,.]/g, '').replace(/\./g, '');
+    } else {
+        return;
+    }
+
+    const numericValue = parseFloat(cleanedValue || '0');
+
+    if (field === 'precio_unitario') {
+        form.precio_unitario = isNaN(numericValue) ? 0 : numericValue;
+    }
+};
+
+// Enviar formulario (actualización)
 const submit = () => {
-  calcularSubtotal();
-  form.put(`/detalle_compras/${props.detalle.id}`);
+    const dataToSubmit = {
+        ...form.data(),
+        precio_unitario: typeof form.precio_unitario === 'string' ? parseFloat(form.precio_unitario) : form.precio_unitario,
+        cantidad: typeof form.cantidad === 'string' ? parseFloat(form.cantidad) : form.cantidad,
+        subtotal: form.subtotal, // Estos ya son números por el cálculo
+        impuesto_iva: form.impuesto_iva,
+        total_pagar: form.total_pagar,
+    };
+
+    form.put(route('detalle_compras.update', props.detalleCompra.id), {
+        onSuccess: () => {
+            router.visit(route('detalle_compras.index'));
+        },
+        onError: (errors) => {
+            console.error("Error al actualizar el detalle de compra:", errors);
+        },
+    });
 };
 </script>
 
 <template>
-  <Head title="Editar Detalle Compra" />
-  <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="min-h-screen flex items-center justify-center p-4 bg-gray-100 dark:bg-gray-900">
-      <div class="w-full max-w-3xl">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <h1 class="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Editar Detalle de Compra</h1>
-          <form @submit.prevent="submit" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Producto -->
-              <div>
-                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Producto</label>
-                <select v-model="form.producto_id"
-                        class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3">
-                  <option disabled value="">Seleccione un producto</option>
-                  <option v-for="producto in props.productos" :key="producto.id" :value="producto.id">
-                    {{ producto.nombre }}
-                  </option>
-                </select>
-                <p v-if="form.errors.producto_id" class="text-red-500 text-sm mt-1">{{ form.errors.producto_id }}</p>
-              </div>
+    <Head title="Editar Detalle de Compra" />
+    <AppLayout :breadcrumbs="breadcrumbs">
+        <div class="min-h-screen flex items-center justify-center p-4 bg-gray-100 dark:bg-gray-900">
+            <div class="w-full max-w-3xl">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                    <h1 class="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Editar Detalle de Compra</h1>
+                    <form @submit.prevent="submit" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2" for="compra_id">ID de Compra</label>
+                                <select id="compra_id" v-model="form.compra_id"
+                                    class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all">
+                                    <option disabled value="">Seleccione una Compra</option>
+                                    <option v-for="compra in compras" :key="compra.id" :value="compra.id">
+                                        {{ compra.id }}
+                                    </option>
+                                </select>
+                                <InputError :message="form.errors.compra_id" class="mt-2" />
+                            </div>
 
-              <!-- Compra -->
-              <div>
-                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Compra</label>
-                <select v-model="form.compra_id"
-                        class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3">
-                  <option disabled value="">Seleccione una compra</option>
-                  <option v-for="compra in props.compras" :key="compra.id" :value="compra.id">
-                    Compra #{{ compra.id }}
-                  </option>
-                </select>
-                <p v-if="form.errors.compra_id" class="text-red-500 text-sm mt-1">{{ form.errors.compra_id }}</p>
-              </div>
+                            <div>
+                                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2" for="producto_id">Producto</label>
+                                <select id="producto_id" v-model="form.producto_id"
+                                    class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all">
+                                    <option disabled value="">Seleccione un Producto</option>
+                                    <option v-for="producto in productos" :key="producto.id" :value="producto.id">
+                                        {{ producto.nombre }}
+                                    </option>
+                                </select>
+                                <InputError :message="form.errors.producto_id" class="mt-2" />
+                            </div>
 
-              <!-- Cantidad -->
-              <div>
-                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Cantidad</label>
-                <input type="number" min="1" v-model="form.cantidad"
-                       class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3" />
-                <p v-if="form.errors.cantidad" class="text-red-500 text-sm mt-1">{{ form.errors.cantidad }}</p>
-              </div>
+                            <div>
+                                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2" for="cantidad">Cantidad</label>
+                                <input id="cantidad" type="number" v-model.number="form.cantidad" min="1"
+                                    class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"/>
+                                <InputError :message="form.errors.cantidad" class="mt-1" />
+                            </div>
 
-              <!-- Precio -->
-              <div>
-                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Precio Unitario</label>
-                <input v-model="precioUnitarioVisible" type="text" autocomplete="off"
-                       class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3" />
-                <p v-if="form.errors.precio_unitario" class="text-red-500 text-sm mt-1">{{ form.errors.precio_unitario }}</p>
-              </div>
+                            <div>
+                                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Precio Unitario</label>
+                                <input v-model="displayPrecioUnitario" @blur="formatNumberInput('precio_unitario')" @input="formatNumberInput('precio_unitario')" type="text" autocomplete="off"
+                                    class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"/>
+                                <InputError :message="form.errors.precio_unitario" class="mt-1" />
+                            </div>
 
-              <!-- Subtotal (solo lectura) -->
-              <div>
-                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Subtotal</label>
-                <input :value="form.subtotal.toLocaleString('es-ES', { minimumFractionDigits: 0 })" disabled
-                       class="w-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3" />
-              </div>
+                            <div>
+                                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Sub Total</label>
+                                <input :value="displaySubtotal" type="text" disabled
+                                    class="w-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3"/>
+                                <InputError :message="form.errors.subtotal" class="mt-1" />
+                            </div>
+
+                            <div>
+                                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Impuesto Iva (19%)</label>
+                                <input :value="displayImpuestoIva" type="text" disabled
+                                    class="w-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3"/>
+                                <InputError :message="form.errors.impuesto_iva" class="mt-1" />
+                            </div>
+
+                            <div>
+                                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Total a Pagar</label>
+                                <input :value="displayTotalPagar" type="text" disabled
+                                    class="w-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3"/>
+                                <InputError :message="form.errors.total_pagar" class="mt-1" />
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0 pt-6">
+                            <button type="submit" class="flex-1 md:flex-none px-6 py-3 rounded-lg bg-cyan-700 hover:bg-cyan-400 text-white font-medium shadow-lg shadow-cyan-500/20 transition-all" :disabled="form.processing">
+                                <span v-if="form.processing">Actualizando...</span>
+                                <span v-else>Actualizar Detalle de Compra</span>
+                            </button>
+                            <button type="button" @click="router.get(route('detalle_compras.index'))"
+                                class="flex-1 md:flex-none px-6 py-3 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-all">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-
-            <!-- Botones -->
-            <div class="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0 pt-6">
-              <button type="submit"
-                      class="flex-1 md:flex-none px-6 py-3 rounded-lg bg-cyan-700 hover:bg-cyan-400 text-white font-medium shadow-lg shadow-cyan-500/20 transition-all"
-                      :disabled="form.processing">
-                <span v-if="form.processing">Procesando...</span>
-                <span v-else>Actualizar</span>
-              </button>
-              <button type="button" @click="router.get('/detalle_compras')"
-                      class="flex-1 md:flex-none px-6 py-3 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-all">
-                Cancelar
-              </button>
-            </div>
-          </form>
         </div>
-      </div>
-    </div>
-  </AppLayout>
+    </AppLayout>
 </template>

@@ -60,7 +60,7 @@ const submit = () => {
         <div>
           <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Razón_social</label>
           <input v-model="form.razon_social" type="text" autocomplete="off"
-            class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"/>
+            class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" />
           <div v-if="form.errors.razon_social" class="text-red-500 text-sm mt-2">
             {{ form.errors.razon_social }}
           </div>
@@ -69,7 +69,7 @@ const submit = () => {
         <div>
           <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Nit</label>
           <input v-model="form.nit" type="text" autocomplete="off"
-            class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"/>
+            class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" />
           <div v-if="form.errors.nit" class="text-red-500 text-sm mt-2">
             {{ form.errors.nit }}
           </div>
@@ -78,7 +78,7 @@ const submit = () => {
         <div>
           <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Dirección</label>
           <input v-model="form.direccion" type="text" autocomplete="off"
-            class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"/>
+            class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" />
           <div v-if="form.errors.direccion" class="text-red-500 text-sm mt-2">
             {{ form.errors.direccion }}
           </div>
@@ -86,18 +86,17 @@ const submit = () => {
 
         <div>
           <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Teléfono</label>
-          <input v-model="form.telefono" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off"
-            @input="form.telefono = form.telefono.replace(/\D/g, '')"
-            class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"/>
-          <div v-if="form.errors.telefono" class="text-red-500 text-sm mt-2">
-            {{ form.errors.telefono }}
-          </div>
+          <input v-model="form.telefono" type="text" inputmode="tel" autocomplete="off" @input="form.telefono = form.telefono.replace(/[^\d+\-()\s]/g, '')"
+           class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" />
+         <div v-if="form.errors.telefono" class="text-red-500 text-sm mt-2">
+           {{ form.errors.telefono }}
+         </div>
         </div>
 
         <div class="md:col-span-2">
           <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
           <input v-model="form.correo" type="email" autocomplete="off"
-            class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"/>
+            class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" />
           <div v-if="form.errors.correo" class="text-red-500 text-sm mt-2">
             {{ form.errors.correo }}
           </div>

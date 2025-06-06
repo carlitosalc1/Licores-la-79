@@ -50,7 +50,7 @@ class Venta extends Model
 
     public function estaPagada(): bool
     {
-        return $this->estado === 'pagada';
+        return $this->estado === 'pagado';
     }
 
     public function estaPendienteDePago(): bool

@@ -4,8 +4,8 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { LayoutGrid, Users, UsersRound, ScrollText, RectangleHorizontal, Truck, Computer, Fish, SquareUserRound,
-         Soup, ReceiptText, Receipt, ShoppingCart, Utensils, ClipboardList, PackageOpen,} from 'lucide-vue-next';
+import { LayoutGrid, Users, UsersRound, ScrollText,  Truck, Computer, Fish, SquareUserRound,
+          ReceiptText, Receipt, ShoppingCart,  ClipboardList, PackageOpen,} from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -14,11 +14,11 @@ const mainNavItems: NavItem[] = [
         href: '/dashboard',
         icon: LayoutGrid,
     },
-    {
-        title: 'Usuario',
-        href: '/users',
-        icon: Users,
-    },
+    // {
+    //     title: 'Usuario',
+    //     href: '/users',
+    //     icon: Users,
+    // },
     {
         title: 'Cliente',
         href: '/clientes',
@@ -69,11 +69,11 @@ const mainNavItems: NavItem[] = [
         href: '/detalle_facturas',
         icon: ClipboardList,
     },
-    {
-        title: 'Rol',
-        href: '/rols',
-        icon: SquareUserRound,
-    },
+    // {
+    //     title: 'Rol',
+    //     href: '/rols',
+    //     icon: SquareUserRound,
+    // },
     {
         title: 'Inventario',
         href: '/inventarios',

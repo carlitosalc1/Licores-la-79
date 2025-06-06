@@ -120,11 +120,9 @@ const getEstadoVariant = (estado: string): "default" | "destructive" | "outline"
               </TableCell>
               <TableCell>{{ venta.tipo_comprobante }}</TableCell>
               <TableCell>
-                <ul>
-                  <li v-for="detalle in venta.detalle_ventas" :key="detalle.id">
-                    {{ detalle.producto?.nombre || 'Producto eliminado' }} - {{ detalle.cantidad }} x {{ Number(detalle.precio).toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }) }}
-                  </li>
-                </ul>
+                   <div v-for="detalle in venta.detalle_ventas" :key="detalle.id">
+                       {{ detalle.producto?.nombre || 'Producto eliminado' }}
+                   </div>
               </TableCell>
               <TableCell class="text-center space-x-2">
                 <Button as-child size="sm" class="bg-blue-500 hover:bg-blue-700 text-white">
@@ -134,10 +132,9 @@ const getEstadoVariant = (estado: string): "default" | "destructive" | "outline"
                   <Trash2 />
                 </Button>
                 <Button as-child size="sm" class="bg-green-500 hover:bg-green-700 text-white">
-  <a :href="route('ventas.factura', venta.id)" target="_blank" rel="noopener">
-    <FileText />
-  </a>
-</Button>
+                 <a :href="route('ventas.factura', venta.id)" target="_blank" rel="noopener">
+                   <FileText /> </a>
+               </Button>
               </TableCell>
             </TableRow>
           </TableBody>

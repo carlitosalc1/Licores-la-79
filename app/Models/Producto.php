@@ -40,4 +40,9 @@ class Producto extends Model
     {
         return $this->hasOne(Inventario::class);
     }
+
+    public function getStockActualAttribute()
+    {
+        return Inventario::getStockActual($this->id);
+    }
 }

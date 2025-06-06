@@ -13,9 +13,11 @@ return new class extends Migration
             $table->foreignId('venta_id')->nullable()->constrained('ventas')->onDelete('cascade');
             $table->foreignId('compra_id')->nullable()->constrained('compras')->onDelete('cascade');
             $table->decimal('monto', 10, 2);
-            $table->enum('metodo_pago', ['efectivo', 'tarjeta']);
+            $table->decimal('monto_recibido', 10, 2);
+            $table->decimal('cambio', 10, 2);
+            $table->enum('metodo_pago', ['efectivo', 'tarjeta_credito','tarjeta_debito']);
             $table->timestamp('fecha_pago')->useCurrent();
-            $table->string('referencia_pago')->nullable(); // Ej. número de transacción, código de voucher
+            $table->string('referencia_pago')->nullable();
             $table->timestamps();
         });
     }

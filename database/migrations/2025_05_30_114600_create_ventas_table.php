@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('restrict');
             $table->date('fecha_venta');
             $table->decimal('total', 10, 2);
-            $table->enum('metodo_pago', ['efectivo', 'tarjeta']);
+            $table->enum('metodo_pago', ['efectivo', 'tarjeta_credito','tarjeta_debito']);
             $table->enum('estado', ['pendiente', 'pagado', 'cancelada'])->default('pendiente');
             $table->string('tipo_comprobante');
             $table->timestamps();

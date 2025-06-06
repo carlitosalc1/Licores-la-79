@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pago;
-use App\Models\Venta; // Asegúrate de importar el modelo Venta
-use App\Models\Compra; // Asegúrate de importar el modelo Compra
+use App\Models\Venta;
+use App\Models\Compra;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Http\Requests\StorePagoRequest; // Necesitas crear este Request
-use App\Http\Requests\UpdatePagoRequest; // Necesitas crear este Request
+use Illuminate\Support\Facades\Redirect;
+use App\Http\Requests\StorePagoRequest;
+use App\Http\Requests\UpdatePagoRequest;
 
 class PagoController extends Controller
 {
@@ -17,14 +18,9 @@ class PagoController extends Controller
      */
     public function index()
     {
-        // Obtener todos los pagos con sus relaciones de venta (con cliente) y compra (con proveedor)
-        $pagos = Pago::with(['venta.cliente', 'compra.proveedor'])->get();
-
+        $pagos = Pago::with(['venta.cliente', 'compra.proveedor'])->latest()->paginate(10);
         return Inertia::render('Pago/Index', [
             'pagos' => $pagos,
-            // También pasamos las ventas y compras para el formulario de creación/edición en la misma página
-            'ventas' => Venta::with('cliente')->get(['id', 'total', 'cliente_id']),
-            'compras' => Compra::with('proveedor')->get(['id', 'total', 'proveedor_id']),
         ]);
     }
 
@@ -33,8 +29,6 @@ class PagoController extends Controller
      */
     public function create()
     {
-        // Obtener solo los IDs y los totales (y nombres de cliente/proveedor si existen)
-        // para las listas desplegables en el formulario.
         $ventas = Venta::with('cliente')->get(['id', 'total', 'cliente_id']);
         $compras = Compra::with('proveedor')->get(['id', 'total', 'proveedor_id']);
 
@@ -49,11 +43,9 @@ class PagoController extends Controller
      */
     public function store(StorePagoRequest $request)
     {
-        // La validación se maneja automáticamente por StorePagoRequest
         Pago::create($request->validated());
 
-        return redirect()->route('pagos.index')
-                         ->with('success', 'Pago registrado exitosamente.');
+        return Redirect::route('pagos.index')->with('flash', ['success' => 'Pago registrado exitosamente.']);
     }
 
     /**
@@ -61,8 +53,6 @@ class PagoController extends Controller
      */
     public function edit(Pago $pago)
     {
-        // Obtener solo los IDs y los totales (y nombres de cliente/proveedor si existen)
-        // para las listas desplegables en el formulario de edición.
         $ventas = Venta::with('cliente')->get(['id', 'total', 'cliente_id']);
         $compras = Compra::with('proveedor')->get(['id', 'total', 'proveedor_id']);
 
@@ -78,11 +68,10 @@ class PagoController extends Controller
      */
     public function update(UpdatePagoRequest $request, Pago $pago)
     {
-        // La validación se maneja automáticamente por UpdatePagoRequest
         $pago->update($request->validated());
 
-        return redirect()->route('pagos.index')
-                         ->with('success', 'Pago actualizado exitosamente.');
+         return redirect()->route('pagos.index')
+                     ->with('flash', ['success' => 'Pago actualizado exitosamente.']);
     }
 
     /**
@@ -92,7 +81,6 @@ class PagoController extends Controller
     {
         $pago->delete();
 
-        return redirect()->route('pagos.index')
-                         ->with('success', 'Pago eliminado exitosamente.');
+        return Redirect::route('pagos.index')->with('flash', ['success' => 'Pago eliminado correctamente.']);
     }
 }

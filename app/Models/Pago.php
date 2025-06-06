@@ -10,12 +10,16 @@ class Pago extends Model
         'venta_id',
         'compra_id',
         'monto',
+        'monto_recibido',
+        'cambio',
         'metodo_pago',
         'fecha_pago',
         'referencia_pago',
     ];
     protected $casts = [
         'monto' => 'float',
+        'cambio' => 'float',
+        'monto_recibido' => 'float',
     ];
 
     public function venta()

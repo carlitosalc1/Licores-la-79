@@ -50,18 +50,15 @@ const deleteCliente = async (id: number) => {
 
 <template>
   <Head title="Clientes" />
-  <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="flex flex-col gap-4 p-4 bg-gray-100 dark:bg-gray-900">
-      <!-- Botón Crear y Buscador -->
-      <div class="flex justify-between items-center flex-wrap gap-2">
-        <Button as-child size="sm" class="flex-1 md:flex-none px-6 py-3 rounded-lg bg-cyan-700 hover:bg-cyan-400 text-white font-medium shadow-lg shadow-cyan-500/20 transition-all">
-          <Link href="/clientes/create">
-            <CirclePlus class="mr-1" /> Crear
-          </Link>
-        </Button>
-        <input v-model="search" type="text" placeholder="Buscar Cliente..."
-          class="px-4 py-2 rounded border border-zinc-300 w-full sm:w-64 dark:bg-zinc-800 dark:text-white" />
-      </div>
+    <AppLayout :breadcrumbs="breadcrumbs">
+      <div class="flex flex-col gap-4 p-4 bg-gray-100 dark:bg-gray-900">
+        <div class="flex justify-between items-center flex-wrap gap-2">
+          <Button as-child size="sm" class="flex-1 md:flex-none px-6 py-3 rounded-lg bg-cyan-700 hover:bg-cyan-400 text-white font-medium shadow-lg shadow-cyan-500/20 transition-all">
+            <Link href="/clientes/create"> <CirclePlus class="mr-1" />Crear</Link>
+          </Button>
+          <input v-model="search" type="text" placeholder="Buscar Clientes..."
+            class="px-4 py-2 rounded border border-zinc-300 w-full sm:w-64 dark:bg-zinc-800 dark:text-white"/>
+        </div>
 
       <!-- Tabla de Clientes -->
       <div class="overflow-x-auto rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">

@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
+
 
 class Factura extends Model
 {
@@ -11,15 +13,12 @@ class Factura extends Model
         'user_id',
         'numero_factura',
         'fecha_emision',
-        'subtotal',
-        'impuesto',
         'total',
         'metodo_pago',
         'estado'
     ];
     protected $casts = [
         'total' => 'float',
-        'impuesto' => 'float',
     ];
 
     protected static function boot()
@@ -27,7 +26,7 @@ class Factura extends Model
          parent::boot();
 
         static::creating(function ($factura) {
-        // Evitar duplicado de facturas por pedido
+        // Evitar duplicado de facturas por venta
         if (Factura::where('venta_id', $factura->venta_id)->exists()) {
             throw new \Exception("Ya existe una factura para esta venta.");
         }

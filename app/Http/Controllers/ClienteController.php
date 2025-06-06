@@ -31,14 +31,13 @@ class ClienteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'tipo_identificacion' => 'required|in:Cédula de Ciudadanía,Cédula de Extranjería,Pasaporte',
-            'numero_identificacion' => 'required|string|regex:/^\d{8,20}$/',
+            'tipo_identificacion' => 'nullable|in:Cédula de Ciudadanía,Cédula de Extranjería,Pasaporte',
+            'numero_identificacion' => 'nullable|string|regex:/^\d{8,20}$/',
             'nombre'=>'required|string|max:20',
-            'apellido'=>'required|string|max:20',
-            'direccion'=>'required|string|max:30',
-            'telefono' => 'required|string|max:20',
-            'correo'=>'required|email',
-            // Agrega más validaciones si lo necesitas
+            'apellido'=>'nullable|string|max:20',
+            'direccion'=>'nullable|string|max:30',
+            'telefono' => 'nullable|string|max:20|regex:/^[\d\s+\-()]+$/',
+            'correo'=>'nullable|email',
         ]);
         Cliente::create($request->all());
         return redirect()->route('clientes.index')->with('success', 'Cliente creado correctamente.');
@@ -58,14 +57,13 @@ class ClienteController extends Controller
     public function update(Request $request, Cliente $cliente)
     {
         $request->validate([
-            'tipo_identificacion' => 'required|in:Cédula de Ciudadanía,Cédula de Extranjería,Pasaporte',
-            'numero_identificacion' => 'required|string|regex:/^\d{8,20}$/',
+            'tipo_identificacion' => 'nullable|in:Cédula de Ciudadanía,Cédula de Extranjería,Pasaporte',
+            'numero_identificacion' => 'nullable|string|regex:/^\d{8,20}$/',
             'nombre'=>'required|string|max:20',
-            'apellido'=>'required|string|max:20',
-            'direccion'=>'required|string|max:30',
-            'telefono' => 'required|string|max:20',
-            'correo'=>'required|email',
-            // Agrega más validaciones si lo necesitas
+            'apellido'=>'nullable|string|max:20',
+            'direccion'=>'nullable|string|max:30',
+            'telefono' => 'nullable|string|max:20|regex:/^[\d\s+\-()]+$/',
+            'correo'=>'nullable|email',
         ]);
 
         $cliente->update($request->all());
@@ -79,7 +77,7 @@ class ClienteController extends Controller
     public function destroy(Cliente $cliente)
     {
         try {
-            $cliente->delete(); // La base de datos se encargará de establecer cliente_id en NULL en las ventas
+            $cliente->delete();
 
             return redirect()->route('clientes.index')->with('success', 'Cliente eliminado correctamente. Sus ventas asociadas han sido conservadas.');
 

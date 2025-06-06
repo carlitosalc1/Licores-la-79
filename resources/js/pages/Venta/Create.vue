@@ -22,14 +22,14 @@ const form = useForm({
   fecha_venta: '',
   tipo_comprobante: '',
   user_id: props.usuario.id,
-  estado: 'pendiente', // Added estado field with a default value
+  estado: 'pendiente',
   detalles: [] as {
     producto_id: number;
     nombre: string;
     cantidad: number;
     precio: number;
     subtotal: number;
-    impuesto_iva: number; // Assuming 19% IVA based on your calculation
+    impuesto_iva: number;
     total: number;
   }[],
   total_iva: 0,
@@ -42,16 +42,23 @@ function agregarProducto() {
   if (!productoSeleccionado.value) return;
 
   const producto = productoSeleccionado.value;
-  const cantidad = 1; // Default quantity
-  const subtotal = cantidad * producto.precio_venta;
-  const iva = subtotal * 0.19; // Calculate IVA (19%)
+  const cantidad = 1;
+  // *** Importante: Asegurarse de que precio_venta sea siempre un número ***
+  const precio_venta_num = Number(producto.precio_venta);
+
+  if (isNaN(precio_venta_num)) {
+    console.error("Error: el precio de venta del producto no es un número válido:", producto.precio_venta);
+    return; // Detener la función si el precio no es válido
+  }
+  const subtotal = cantidad * precio_venta_num;
+  const iva = subtotal * 0.19;
   const total = subtotal + iva;
 
   form.detalles.push({
     producto_id: producto.id,
     nombre: producto.nombre,
     cantidad,
-    precio: producto.precio_venta,
+    precio: precio_venta_num,
     subtotal,
     impuesto_iva: iva,
     total,
@@ -151,7 +158,8 @@ const formatCurrency = (value: number) => {
                   class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all">
                   <option disabled value="">Seleccione un medio de pago</option>
                   <option value="efectivo">Efectivo</option>
-                  <option value="tarjeta">Tarjeta</option>
+                  <option value="tarjeta_credito">Tarjeta Credito</option>
+                  <option value="tarjeta_debito">Tarjeta Debito</option>
                 </select>
                 <InputError :message="form.errors.metodo_pago" class="mt-2" />
               </div>

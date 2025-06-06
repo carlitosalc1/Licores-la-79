@@ -10,18 +10,12 @@ return new class extends Migration
     {
         Schema::create('facturas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('venta_id')
-                  ->unique() // Una venta solo puede tener una factura
-                  ->constrained('ventas')
-                  ->onDelete('cascade');
+            $table->foreignId('venta_id')->unique()->constrained('ventas')->onDelete('cascade');
             $table->string('numero_factura')->unique();
             $table->date('fecha_emision')->useCurrent();
-            $table->decimal('subtotal', 10, 2);
-            $table->decimal('impuesto', 10, 2);
             $table->decimal('total', 10, 2);
-            $table->enum('metodo_pago', ['efectivo', 'tarjeta']);
-            $table->string('estado')->default('pendiente');
-
+            $table->enum('metodo_pago', ['efectivo', 'tarjeta_credito', 'tarjeta_debito']);
+            $table->enum('estado',['pendiente', 'pagada', 'anulada']);
             $table->timestamps();
         });
     }

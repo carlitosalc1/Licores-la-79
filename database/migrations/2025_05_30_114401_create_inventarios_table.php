@@ -4,34 +4,25 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+class CreateInventarioTable extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-    public function up(): void
+    public function up()
     {
-        Schema::create('inventarios', function (Blueprint $table) {
+        Schema::create('inventario', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('producto_id')
-                  ->constrained('productos')
-                  ->onDelete('cascade'); // Si el producto se elimina, sus registros de inventario también
-            $table->integer('cantidad_inicial');
+            $table->foreignId('producto_id')->constrained()->onDelete('cascade');
+            $table->foreignId('compra_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('venta_id')->nullable()->constrained()->onDelete('set null');
             $table->integer('cantidad_entrada')->default(0);
             $table->integer('cantidad_salida')->default(0);
-            $table->integer('cantidad_actual');
-            $table->timestamp('fecha_actualizacion')->useCurrent(); // Fecha del movimiento
             $table->string('tipo_movimiento'); // 'entrada', 'salida', 'ajuste'
-            $table->text('observaciones')->nullable();
+            $table->dateTime('fecha_actualizacion');
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
+    public function down()
     {
-        Schema::dropIfExists('inventarios');
+        Schema::dropIfExists('inventario');
     }
-};
+}

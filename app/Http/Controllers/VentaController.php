@@ -12,123 +12,163 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Inertia\Inertia;
+use Illuminate\Validation\ValidationException;
 
 class VentaController extends Controller
 {
     public function index()
     {
         $ventas = Venta::with([
-        'cliente',
-        'user',
-        'detalleVentas.producto.categoriaProducto'
-    ])->latest()->paginate(10);
+            'cliente',
+            'user',
+            'detalleVentas.producto.categoriaProducto'
+        ])->latest()->paginate(10);
 
-    return Inertia::render('Venta/Index', [
-        'ventas' => $ventas
-    ]);
+        return Inertia::render('Venta/Index', [
+            'ventas' => $ventas
+        ]);
     }
 
     public function create()
     {
-
         return Inertia::render('Venta/Create', [
             'clientes' => Cliente::select('id', 'nombre')->get(),
             'productos' => Producto::select('id', 'nombre', 'precio_venta')->get(),
-            'usuario' => Auth::user(),
+            'usuario' => Auth::user()->only('id', 'name'),
         ]);
     }
 
     public function store(Request $request)
-{
-    $request->validate([
-        'fecha_venta' => 'required|date',
-        'cliente_id' => 'required|exists:clientes,id',
-        'metodo_pago' => 'required|in:efectivo,tarjeta',
-        'tipo_comprobante' => 'required|in:factura',
-        'detalles' => 'required|array|min:1',
-        'detalles.*.producto_id' => 'required|exists:productos,id',
-        'detalles.*.cantidad' => 'required|integer|min:1',
-    ]);
-
-    DB::beginTransaction();
-
-    try {
-        $detalles = $request->input('detalles');
-        $total = 0;
-        $iva_porcentaje = 0.19;
-
-        $venta = Venta::create([
-            'cliente_id' => $request->cliente_id,
-            'user_id' => auth()->id(),
-            'fecha_venta' => now(),
-            'total' => 0,
-            'metodo_pago' => $request->metodo_pago,
-            'estado' => 'pagado',
-            'tipo_comprobante' => $request->tipo_comprobante,
+    {
+        $request->validate([
+            'fecha_venta' => 'required|date',
+            'cliente_id' => 'required|exists:clientes,id',
+            'metodo_pago' => 'required|in:efectivo,tarjeta_credito,tarjeta_debito',
+            'tipo_comprobante' => 'required|in:factura',
+            'estado' => 'required|in:pendiente,pagado,cancelada',
+            'detalles' => 'required|array|min:1',
+            'detalles.*.producto_id' => 'required|exists:productos,id',
+            'detalles.*.cantidad' => 'required|integer|min:1',
+            'total_iva' => 'required|numeric|min:0',
+            'total_venta' => 'required|numeric|min:0',
         ]);
 
-        foreach ($detalles as $detalle) {
-            $producto = Producto::findOrFail($detalle['producto_id']);
-            $cantidad = $detalle['cantidad'];
-            $precio = $producto->precio_venta;
-            $subtotal = $cantidad * $precio;
-            $impuesto_iva = $subtotal * $iva_porcentaje;
+        DB::beginTransaction();
 
-            $total += $subtotal + $impuesto_iva;
+        try {
+            $detallesRequest = $request->input('detalles');
+            $totalVentaCalculado = 0;
+            $totalIvaCalculado = 0;
+            $iva_porcentaje = 0.19;
 
-            DetalleVenta::create([
-                'venta_id' => $venta->id,
-                'producto_id' => $producto->id,
-                'cantidad' => $cantidad,
-                'precio_unitario' => $precio,
-                'subtotal' => $subtotal,
-                'impuesto_iva' => $impuesto_iva,
+            foreach ($detallesRequest as $detalle) {
+                $producto = Producto::findOrFail($detalle['producto_id']);
+                $cantidad = $detalle['cantidad'];
+
+                $precio = (float) $producto->precio_venta;
+
+                $subtotal = $cantidad * $precio;
+                $impuesto_iva = $subtotal * $iva_porcentaje;
+
+                $totalVentaCalculado += $subtotal + $impuesto_iva;
+                $totalIvaCalculado += $impuesto_iva;
+            }
+
+            $venta = Venta::create([
+                'cliente_id' => $request->cliente_id,
+                'user_id' => auth()->id(),
+                'fecha_venta' => $request->fecha_venta,
+                'total' => $totalVentaCalculado,
+                'metodo_pago' => $request->metodo_pago,
+                'estado' => $request->estado,
+                'tipo_comprobante' => $request->tipo_comprobante,
+                'total_iva' => $totalIvaCalculado,
             ]);
+
+            foreach ($detallesRequest as $detalle) {
+                $producto = Producto::findOrFail($detalle['producto_id']);
+                $cantidad = $detalle['cantidad'];
+                $precio = (float) $producto->precio_venta;
+
+                $subtotal = $cantidad * $precio;
+                $impuesto_iva = $subtotal * $iva_porcentaje;
+
+                DetalleVenta::create([
+                    'venta_id' => $venta->id,
+                    'producto_id' => $producto->id,
+                    'cantidad' => $cantidad,
+                    'precio_unitario' => $precio,
+                    'subtotal' => $subtotal,
+                    'impuesto_iva' => $impuesto_iva,
+                    'total' => $subtotal + $impuesto_iva,
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('ventas.index')->with('success', 'Venta registrada correctamente.');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            return back()->withErrors($e->errors())->withInput();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Error al registrar la venta: ' . $e->getMessage()])->withInput();
         }
-
-        $venta->update([
-            'total' => $total
-        ]);
-
-        DB::commit();
-
-        return redirect()->route('ventas.index')->with('success', 'Venta registrada correctamente.');
-    } catch (\Throwable $e) {
-        DB::rollBack();
-        return back()->withErrors(['error' => 'Error al registrar la venta: ' . $e->getMessage()]);
     }
-}
 
     public function edit(Venta $venta)
-    {
-        $venta->load(['cliente', 'user', 'detalleVentas.producto']);
+{
+    $venta->load(['cliente', 'user', 'detalleVentas.producto']);
 
-        $clientes = Cliente::all();
-        $productos = Producto::all();
-        $usuario = Auth::user(); // Obtener el usuario autenticado
-
-        return Inertia::render('Venta/Edit', [
-            'venta' => $venta,
-            'clientes' => $clientes,
-            'productos' => $productos,
-            'usuario' => $usuario,
-        ]);
-    }
-
+    return Inertia::render('Venta/Edit', [
+        'venta' => [
+            'id' => $venta->id,
+            'cliente_id' => $venta->cliente_id,
+            'metodo_pago' => $venta->metodo_pago,
+            'fecha_venta' => $venta->fecha_venta,
+            'tipo_comprobante' => $venta->tipo_comprobante,
+            'user_id' => $venta->user_id,
+            'estado' => $venta->estado,
+            'total_iva' => $venta->total_iva,
+            'total' => $venta->total,
+            'detalle_ventas' => $venta->detalleVentas->map(function ($detalle) {
+                return [
+                    'id' => $detalle->id,
+                    'producto_id' => $detalle->producto_id,
+                    'producto' => [
+                        'nombre' => $detalle->producto->nombre,
+                        'precio_venta' => $detalle->producto->precio_venta
+                    ],
+                    'cantidad' => $detalle->cantidad,
+                    'precio_unitario' => $detalle->precio_unitario,
+                    'subtotal' => $detalle->subtotal,
+                    'impuesto_iva' => $detalle->impuesto_iva,
+                    'total' => $detalle->total,
+                ];
+            }),
+            'total_iva' => $venta->total_iva,
+            'total_venta' => $venta->total
+        ],
+        'clientes' => Cliente::all(),
+        'productos' => Producto::all(),
+        'usuario' => Auth::user()->only('id', 'name'),
+    ]);
+}
     public function update(Request $request, Venta $venta)
     {
         try {
-            // Validación de datos (ajusta según tus necesidades)
+
             $request->validate([
                 'cliente_id' => ['required', 'exists:clientes,id'],
                 'metodo_pago' => ['required', 'string', 'max:255'],
                 'fecha_venta' => ['required', 'date'],
                 'tipo_comprobante' => ['required', 'string', 'max:255'],
                 'user_id' => ['required', 'exists:users,id'],
+                'estado' => ['required', 'string', 'in:pendiente,pagado,cancelada'],
                 'detalles' => ['required', 'array', 'min:1'],
                 'detalles.*.producto_id' => ['required', 'exists:productos,id'],
                 'detalles.*.cantidad' => ['required', 'integer', 'min:1'],
-                'detalles.*.precio' => ['required', 'numeric', 'min:0'], // Precio unitario enviado desde frontend
+                'detalles.*.precio' => ['required', 'numeric', 'min:0'],
                 'detalles.*.subtotal' => ['required', 'numeric', 'min:0'],
                 'detalles.*.impuesto_iva' => ['required', 'numeric', 'min:0'],
                 'detalles.*.total' => ['required', 'numeric', 'min:0'],
@@ -137,24 +177,49 @@ class VentaController extends Controller
             ]);
 
             DB::transaction(function () use ($request, $venta) {
-                // Actualizar los datos de la venta
-                $venta->update($request->only([
-                    'cliente_id', 'metodo_pago', 'fecha_venta', 'tipo_comprobante',
-                    'user_id', 'total_iva', 'total_venta'
-                ]));
+                $totalVentaCalculado = 0;
+                $totalIvaCalculado = 0;
+                $iva_porcentaje = 0.19;
 
-                // Eliminar los detalles de venta existentes para luego agregar los nuevos
+                foreach ($request->detalles as $detalleData) {
+                    $producto = Producto::findOrFail($detalleData['producto_id']);
+                    $cantidad = $detalleData['cantidad'];
+                    $precio = (float) $producto->precio_venta;
+
+                    $subtotal = $cantidad * $precio;
+                    $impuesto_iva = $subtotal * $iva_porcentaje;
+
+                    $totalVentaCalculado += $subtotal + $impuesto_iva;
+                    $totalIvaCalculado += $impuesto_iva;
+                }
+
+                $venta->update([
+                    'cliente_id' => $request->cliente_id,
+                    'metodo_pago' => $request->metodo_pago,
+                    'fecha_venta' => $request->fecha_venta,
+                    'tipo_comprobante' => $request->tipo_comprobante,
+                    'user_id' => $request->user_id,
+                    'estado' => $request->estado,
+                    'total' => $totalVentaCalculado,
+                    'total_iva' => $totalIvaCalculado,
+                ]);
+
                 $venta->detalleVentas()->delete();
 
-                // Crear nuevos detalles de venta
                 foreach ($request->detalles as $detalleData) {
+                    $producto = Producto::findOrFail($detalleData['producto_id']);
+                    $cantidad = $detalleData['cantidad'];
+                    $precio = (float) $producto->precio_venta;
+                    $subtotal = $cantidad * $precio;
+                    $impuesto_iva = $subtotal * $iva_porcentaje;
                     $venta->detalleVentas()->create([
+                        'venta_id' => $venta->id,
                         'producto_id' => $detalleData['producto_id'],
-                        'cantidad' => $detalleData['cantidad'],
-                        'precio_unitario' => $detalleData['precio'], // Almacenar el precio unitario
-                        'subtotal' => $detalleData['subtotal'],
-                        'impuesto_iva' => $detalleData['impuesto_iva'],
-                        'total' => $detalleData['total'],
+                        'cantidad' => $cantidad,
+                        'precio_unitario' => $precio,
+                        'subtotal' => $subtotal,
+                        'impuesto_iva' => $impuesto_iva,
+                        'total' => $subtotal + $impuesto_iva,
                     ]);
                 }
             });
@@ -162,13 +227,9 @@ class VentaController extends Controller
             return redirect()->route('ventas.index')->with('success', 'Venta actualizada exitosamente.');
 
         } catch (ValidationException $e) {
-            return redirect()->back()
-                ->withErrors($e->errors())
-                ->withInput();
+            return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Error al actualizar la venta: ' . $e->getMessage())
-                ->withInput();
+            return redirect()->back()->with('error', 'Error al actualizar la venta: ' . $e->getMessage())->withInput();
         }
     }
 
@@ -179,34 +240,34 @@ class VentaController extends Controller
         return redirect()->route('ventas.index')->with('success', 'Venta eliminada correctamente.');
     }
 
+
     private function generarNumeroFactura(): string
     {
         return 'F-' . str_pad(Factura::count() + 1, 6, '0', STR_PAD_LEFT);
     }
 
     public function generarFactura(Venta $venta)
-{
-    // Carga relaciones necesarias
-    $venta->load([
-        'cliente',
-        'user',
-        'detalleVentas.producto',
-    ]);
+    {
+        $venta->load([
+            'cliente',
+            'user',
+            'detalleVentas.producto',
+        ]);
 
-    // Datos que se pasarán a la vista PDF
-    $data = [
-        'venta' => $venta,
-        'cliente' => $venta->cliente,
-        'cajero' => $venta->user,
-        'detalles_venta' => $venta->detalleVentas,
-        'fecha_actual' => now()->format('d/m/Y H:i'),
-    ];
+        // Datos que se pasarán a la vista PDF
+        $data = [
+            'venta' => $venta,
+            'cliente' => $venta->cliente,
+            'cajero' => $venta->user,
+            'detalles_venta' => $venta->detalleVentas,
+            'fecha_actual' => now()->format('d/m/Y H:i'),
+        ];
 
-    // Renderiza la vista en PDF
-    $pdf = Pdf::loadView('pdf.factura', $data)
-          ->setPaper([0, 0, 226.77, 453,54],'portrait'); // A7 personalizado en puntos,80mm de ancho × alto variable
+        // Renderiza la vista en PDF
+        $pdf = Pdf::loadView('pdf.factura', $data)
+            ->setPaper([0, 0, 226.77, 453.54],'portrait');
 
-    // Devuelve la descarga del archivo PDF
-    return $pdf->download('factura_' . $venta->id . '.pdf');
-}
+        // Devuelve la descarga del archivo PDF
+        return $pdf->download('factura_' . $venta->id . '.pdf');
+    }
 }

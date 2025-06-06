@@ -11,11 +11,13 @@ class DetalleCompra extends Model
         'producto_id',
         'cantidad',
         'precio_unitario',
-        'subtotal'
+        'subtotal',
+        'impuesto_iva',
     ];
      protected $casts = [
     'precio_unitario' => 'float',
     'subtotal' => 'float',
+    'impuesto_iva' => 'float',
     ];
 
     public function compra()

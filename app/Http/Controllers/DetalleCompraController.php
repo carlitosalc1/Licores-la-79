@@ -2,33 +2,39 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\DetalleCompra;
-use App\Models\Producto;
 use App\Models\Compra;
+use App\Models\Producto;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 
 class DetalleCompraController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Muestra una lista paginada de detalles de compra.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $detalleCompras = DetalleCompra::with(['producto', 'compra'])
-        ->orderBy('id', 'desc')
-        ->paginate(10)
-        ->withQueryString();
+        $detallesCompra = DetalleCompra::with(['compra', 'producto'])
+            ->when($request->search, function ($query, $search) {
+                $query->whereHas('producto', function ($q) use ($search) {
+                    $q->where('nombre', 'like', '%' . $search . '%');
+                })->orWhereHas('compra', function ($q) use ($search) {
+                    $q->where('id', 'like', '%' . $search . '%');
+                });
+            })
+            ->latest()
+            ->paginate(10)
+            ->appends($request->all());
 
-         return Inertia::render('DetalleCompra/Index', [
-        'detalles' => $detalleCompras,
-    ]);
+        return Inertia::render('DetalleCompra/Index', [
+            'detallesCompra' => $detallesCompra,
+            'filters' => $request->only(['search']),
+        ]);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Muestra el formulario para crear un nuevo detalle de compra.
      */
     public function create()
     {
@@ -39,60 +45,72 @@ class DetalleCompraController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Almacena un nuevo detalle de compra en la base de datos.
      */
     public function store(Request $request)
     {
-     $validated = $request->validate([
-        'compra_id'   => 'required|exists:compras,id',
-        'producto_id' => 'required|exists:productos,id',
-        'cantidad'    => 'required|integer|min:1',
-        'precio_unitario' => 'required|numeric',
-        'subtotal'    => 'required|numeric',
-    ]);
+        $validated = $request->validate([
+            'compra_id' => 'required|exists:compras,id',
+            'producto_id' => 'required|exists:productos,id',
+            'cantidad' => 'required|integer|min:1',
+            'precio_unitario' => 'required|numeric|min:0',
+            'subtotal' => 'required|numeric|min:0',
+            'impuesto_iva' => 'required|numeric|min:0',
+        ]);
 
-         DetalleCompra::create($validated);
-         return redirect()->route('detalle_compras.index');
+        DetalleCompra::create($validated);
+
+        return redirect()->route('detalle_compras.index');
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Muestra los detalles de un detalle de compra específico.
+     */
+    public function show(DetalleCompra $detalleCompra)
+    {
+        return Inertia::render('DetalleCompra/Show', [
+            'detalleCompra' => $detalleCompra->load(['compra', 'producto']),
+        ]);
+    }
+
+    /**
+     * Muestra el formulario para editar un detalle de compra existente.
      */
     public function edit(DetalleCompra $detalleCompra)
     {
-        $productos = Producto::all();
-        $compras = Compra::all();
-
         return Inertia::render('DetalleCompra/Edit', [
-        'detalle' => $detalleCompra,
-        'productos' => Producto::select('id', 'nombre')->get(),
-        'compras' => Compra::select('id')->get(),
-    ]);
+            'detalleCompra' => $detalleCompra->load(['compra', 'producto']),
+            'compras' => Compra::select('id')->get(),
+            'productos' => Producto::select('id', 'nombre', 'precio_compra')->get(),
+        ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Actualiza un detalle de compra en la base de datos.
      */
     public function update(Request $request, DetalleCompra $detalleCompra)
     {
         $validated = $request->validate([
-        'producto_id' => 'required|exists:productos,id',
-        'compra_id' => 'required|exists:compras,id',
-        'cantidad' => 'required|integer|min:1',
-        'precio_unitario' => 'required|numeric|min:0',
-    ]);
+            'compra_id' => 'required|exists:compras,id',
+            'producto_id' => 'required|exists:productos,id',
+            'cantidad' => 'required|integer|min:1',
+            'precio_unitario' => 'required|numeric|min:0',
+            'subtotal' => 'required|numeric|min:0',
+            'impuesto_iva' => 'required|numeric|min:0',
+        ]);
 
-        $validated['subtotal'] = $validated['cantidad'] * $validated['precio_unitario'];
         $detalleCompra->update($validated);
+
         return redirect()->route('detalle_compras.index');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Elimina un detalle de compra de la base de datos.
      */
     public function destroy(DetalleCompra $detalleCompra)
     {
         $detalleCompra->delete();
-        return redirect()->route('detalle_compras.index');
+
+        return redirect()->route('detalle_compras.index')->with('success', 'Detalle de compra eliminado correctamente.');
     }
 }

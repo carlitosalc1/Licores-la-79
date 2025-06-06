@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('proveedor_id')->constrained('proveedors')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('restrict');
-            $table->date('fecha');
+            $table->date('fecha_compra');
             $table->decimal('total', 10, 2);
-            $table->enum('estado', ['pagado', 'cancelada'])->default('pagada');
+            $table->enum('estado', ['pagado', 'cancelada'])->default('pagado');
             $table->timestamps();
         });
     }

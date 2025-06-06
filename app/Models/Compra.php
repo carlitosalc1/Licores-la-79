@@ -9,9 +9,9 @@ class Compra extends Model
     protected $fillable = [
         'proveedor_id',
         'user_id',
-        'fecha',
+        'fecha_compra',
         'total',
-        'estado'
+        'estado',
     ];
     protected $casts = [
     'total' => 'float',

@@ -4,20 +4,18 @@ import { ref, computed, watch } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import InputError from '@/components/InputError.vue';
+import { Head } from '@inertiajs/vue3'; // Asegúrate de importar Head
 
 // Definiciones de tipos para evitar errores de TypeScript.
-// Estas deberían idealmente estar en tu archivo '@/types'
 interface Cliente {
   id: number;
   nombre: string;
-  // ... otras propiedades del cliente
 }
 
 interface Producto {
   id: number;
   nombre: string;
-  precio_venta: number;
-  // ... otras propiedades del producto
+  precio_venta: number; // Este es el precio del producto en sí
 }
 
 interface Usuario {
@@ -26,41 +24,38 @@ interface Usuario {
 }
 
 interface DetalleVenta {
-  id?: number; // Opcional si es un nuevo detalle
+  id?: number;
   producto_id: number;
-  producto?: Producto; // El objeto producto anidado, si existe
-  nombre: string; // Añadido para el formulario
+  producto?: Producto;
+  nombre: string;
   cantidad: number;
-  precio: number;
+  precio_unitario: number; // Cambiado de 'precio' a 'precio_unitario' para coincidir con el backend
   subtotal: number;
   impuesto_iva: number;
   total: number;
-  // ... otras propiedades de detalle de venta
 }
 
 interface Venta {
   id: number;
   cliente_id: number;
-  cliente?: Cliente; // El objeto cliente anidado
+  cliente?: Cliente;
   metodo_pago: string;
   fecha_venta: string;
   tipo_comprobante: string;
   user_id: number;
-  user: Usuario; // El objeto usuario anidado
+  user: Usuario;
   estado: string;
   detalle_ventas: DetalleVenta[];
-  total_iva: number; // Añadido
-  total_venta: number; // Añadido
-  // ... otras propiedades de venta
+  total_iva: number;
+  total_venta: number;
+  total: number; // Añadido si tu modelo Venta tiene un campo 'total' general
 }
 
-
-// Definir props para el componente, incluyendo la venta a editar
 const props = defineProps<{
   clientes: Cliente[];
   productos: Producto[];
   usuario: Usuario;
-  venta: Venta; // El objeto Venta existente a editar
+  venta: Venta;
 }>();
 
 // Inicializar el formulario con los datos de la venta existente
@@ -69,65 +64,76 @@ const form = useForm({
   metodo_pago: props.venta.metodo_pago,
   fecha_venta: props.venta.fecha_venta,
   tipo_comprobante: props.venta.tipo_comprobante,
-  user_id: props.venta.user_id, // Usar el user_id de la venta existente
-  estado: props.venta.estado, // Inicializar con el estado existente
-  // Mapear los detalles existentes a la estructura del formulario, asegurando que todos los campos necesarios estén presentes
+  user_id: props.venta.user_id,
+  estado: props.venta.estado,
   detalles: props.venta.detalle_ventas.map((detalle: DetalleVenta) => ({
-    producto_id: detalle.producto_id,
-    nombre: detalle.producto?.nombre || 'Producto Desconocido', // Manejar caso donde el producto podría ser nulo
-    cantidad: detalle.cantidad,
-    precio: detalle.precio,
-    subtotal: detalle.subtotal,
-    impuesto_iva: detalle.impuesto_iva,
-    total: detalle.total,
+   producto_id: detalle.producto_id,
+    nombre: detalle.producto?.nombre || 'Producto Desconocido',
+    cantidad: Number(detalle.cantidad) || 1,
+    precio: Number(detalle.precio_unitario) || 0,
+    subtotal: Number(detalle.subtotal) || 0,
+    impuesto_iva: Number(detalle.impuesto_iva) || 0,
+    total: Number(detalle.total) || (Number(detalle.subtotal) + Number(detalle.impuesto_iva)) // ← Cálculo de respaldo
   })),
-  total_iva: props.venta.total_iva,
-  total_venta: props.venta.total_venta,
+  total_iva: Number(props.venta.total_iva) ||
+            props.venta.detalle_ventas.reduce((sum, d) => sum + Number(d.impuesto_iva), 0),
+  total_venta: Number(props.venta.total) ||
+              props.venta.detalle_ventas.reduce((sum, d) => sum + Number(d.total), 0)
 });
 
 const productoSeleccionado = ref<Producto | null>(null);
-const successMessage = ref<string | null>(null); // Nuevo: Mensaje de éxito
+const successMessage = ref<string | null>(null);
 
-/**
- * Agrega un producto seleccionado a los detalles de la venta.
- */
 function agregarProducto() {
   if (!productoSeleccionado.value) return;
 
   const producto = productoSeleccionado.value;
-  const cantidad = 1; // Cantidad por defecto
-  const subtotal = cantidad * producto.precio_venta;
-  const iva = subtotal * 0.19; // Calcular IVA (19%)
+  const cantidad = 1;
+  const precio_venta_num = Number(producto.precio_venta);
+
+  if (isNaN(precio_venta_num)) {
+    console.error("Precio no válido:", producto.precio_venta);
+    return;
+  }
+
+  const subtotal = cantidad * precio_venta_num;
+  const iva = subtotal * 0.19;
   const total = subtotal + iva;
 
   form.detalles.push({
     producto_id: producto.id,
     nombre: producto.nombre,
     cantidad,
-    precio: producto.precio_venta,
+    precio: precio_venta_num,
     subtotal,
     impuesto_iva: iva,
     total,
   });
 
-  productoSeleccionado.value = null; // Reiniciar el producto seleccionado después de agregar
+  // Actualizar totales generales
+  form.total_iva += iva;
+  form.total_venta += total;
+
+  productoSeleccionado.value = null;
 }
 
-/**
- * Recalcula los totales para un elemento de detalle específico basado en cambios de cantidad.
- * @param index El índice del elemento de detalle en el array form.detalles.
- */
 function recalcularTotales(index: number) {
   const item = form.detalles[index];
-  // Asegurarse de que la cantidad sea un número y al menos 1
-  item.cantidad = Math.max(1, Number(item.cantidad) || 1);
 
+  // Validar valores numéricos
+  item.cantidad = Math.max(1, Number(item.cantidad)) || 1;
+  item.precio = Math.max(0, Number(item.precio)) || 0;
+
+  // Recalcular todo
   item.subtotal = item.cantidad * item.precio;
   item.impuesto_iva = item.subtotal * 0.19;
-  item.total = item.subtotal + item.impuesto_iva;
+  item.total = item.subtotal + item.impuesto_iva; // ← Esto corrige el 0
+
+  // Actualizar totales generales
+  form.total_iva = form.detalles.reduce((sum, d) => sum + d.impuesto_iva, 0);
+  form.total_venta = form.detalles.reduce((sum, d) => sum + d.total, 0);
 }
 
-// Propiedades computadas para los totales generales
 const totalIVA = computed(() =>
   form.detalles.reduce((acc, d) => acc + d.impuesto_iva, 0)
 );
@@ -136,31 +142,22 @@ const totalVenta = computed(() =>
   form.detalles.reduce((acc, d) => acc + d.total, 0)
 );
 
-// Observar cambios en totalIVA y totalVenta para actualizar los campos del formulario
-watch(totalIVA, (newValue) => {
-  form.total_iva = newValue;
-});
 
-watch(totalVenta, (newValue) => {
-  form.total_venta = newValue;
-});
-
-// Migas de pan para la página de edición
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Ventas', href: '/ventas' },
   { title: 'Editar Venta', href: '#' },
 ];
 
-/**
- * Envía el formulario para actualizar la venta.
- */
 function submit() {
-  // Usar form.put para actualizar un recurso existente
+  // Asegurarse de que los totales computados estén actualizados en el formulario antes de enviar
+  form.total_iva = totalIVA.value;
+  form.total_venta = totalVenta.value;
+
   form.put(route('ventas.update', props.venta.id), {
     onSuccess: () => {
-      successMessage.value = '¡Venta actualizada exitosamente!'; // Establecer mensaje de éxito
+      successMessage.value = '¡Venta actualizada exitosamente!';
       setTimeout(() => {
-        successMessage.value = null; // Limpiar mensaje después de 3 segundos
+        successMessage.value = null;
         router.visit(route('ventas.index')); // Redirigir al índice de ventas en caso de éxito
       }, 3000);
     },
@@ -171,9 +168,11 @@ function submit() {
   });
 }
 
-// Función auxiliar para formatear moneda (sin decimales, separador de miles)
 const formatCurrency = (value: number) => {
-  return Number(value).toLocaleString('es-CO', {
+  const numValue = Number(value);
+  if (isNaN(numValue)) return '$0';
+
+  return numValue.toLocaleString('es-CO', {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,
@@ -221,7 +220,8 @@ const formatCurrency = (value: number) => {
                   class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all">
                   <option disabled value="">Seleccione un medio de pago</option>
                   <option value="efectivo">Efectivo</option>
-                  <option value="tarjeta">Tarjeta</option>
+                  <option value="tarjeta_credito">Tarjeta Credito</option>
+                  <option value="tarjeta_debito">Tarjeta Debito</option>
                 </select>
                 <InputError :message="form.errors.metodo_pago" class="mt-2" />
               </div>
@@ -292,10 +292,13 @@ const formatCurrency = (value: number) => {
                       <td class="p-3">{{ detalle.nombre }}</td>
                       <td class="p-3 text-center">
                         <input type="number" v-model.number="detalle.cantidad" min="1"
-                          class="w-20 text-center rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 p-2 focus:ring-1 focus:ring-cyan-500 focus:border-transparent transition-all"
-                          @input="recalcularTotales(index)" />
-                      </td>
-                      <td class="p-3 text-right">{{ formatCurrency(detalle.precio) }}</td>
+                         class="w-20 text-center rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 p-2 focus:ring-1 focus:ring-cyan-500 focus:border-transparent transition-all"
+                           @input="recalcularTotales(index)" /></td>
+                      <td class="p-3 text-right">
+                        <span class="inline-block w-28 text-right p-2">
+                        {{ formatCurrency(detalle.precio) }}
+                          </span></td>
+                      <td class="p-3 text-right">{{ formatCurrency(detalle.total) }}</td>
                       <td class="p-3 text-right">{{ formatCurrency(detalle.subtotal) }}</td>
                       <td class="p-3 text-right">{{ formatCurrency(detalle.impuesto_iva) }}</td>
                       <td class="p-3 text-right">{{ formatCurrency(detalle.total) }}</td>
@@ -311,8 +314,8 @@ const formatCurrency = (value: number) => {
               </div>
 
               <div class="text-right mt-6 space-y-2 text-gray-800 dark:text-white">
-                <p class="text-lg"><strong>Total IVA:</strong> {{ formatCurrency(totalIVA) }}</p>
-                <p class="text-xl font-bold"><strong>Total Venta:</strong> {{ formatCurrency(totalVenta) }}</p>
+               <p class="text-lg"><strong>Total IVA:</strong> {{ formatCurrency(form.total_iva) }}</p>
+               <p class="text-xl font-bold"><strong>Total Venta:</strong> {{ formatCurrency(form.total_venta) }}</p>
               </div>
             </div>
 

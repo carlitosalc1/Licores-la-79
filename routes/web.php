@@ -66,7 +66,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/facturas/generar-desde-venta/{venta}', [FacturaController::class, 'generarDesdeventa'])
         ->name('facturas.generar-desde-venta');
     // Detalles de Facturas
-    Route::resource('detalle_facturas', DetalleFacturaController::class)->except(['index']);
+    Route::resource('detalle_facturas', DetalleFacturaController::class);
+
 
     // Pagos
     Route::resource('pagos', PagoController::class);
@@ -77,7 +78,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Reportes
     Route::get('/reportes/ventas', [ReporteController::class, 'ventas'])->name('reportes.ventas');
     Route::get('/reportes/inventario', [ReporteController::class, 'inventario'])->name('reportes.inventario');
-    Route::get('/reportes/pedidos', [ReporteController::class, 'pedidos'])->name('reportes.pedidos');
+    Route::get('/reportes/compras', [ReporteController::class, 'compras'])->name('reportes.compras');
     Route::get('/reportes/facturas', [ReporteController::class, 'facturas'])->name('reportes.facturas');
 
 });

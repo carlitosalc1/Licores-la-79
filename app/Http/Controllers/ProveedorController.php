@@ -32,11 +32,11 @@ class ProveedorController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'razon_social'=>'required|string|max:20',
-            'nit'=>'required|string|max:20',
-            'direccion'=>'required|string|max:30',
-            'telefono' => 'required|string|max:20',
-            'correo'=>'required|email',
+            'razon_social' => 'required|string|max:30',
+            'nit' => 'required|string|max:25',
+            'direccion' => 'nullable|string|max:40',
+            'telefono' => 'nullable|string|max:20|regex:/^[\d\s+\-()]+$/',
+            'correo'=>'nullable|email',
             // Agrega más validaciones si lo necesitas
         ]);
         Proveedor::create($request->all());
@@ -57,9 +57,9 @@ class ProveedorController extends Controller
     public function update(Request $request, Proveedor $proveedor)
     {
         $request->validate([
-            'razon_social'=>'required|string|max:20',
-            'nit'=>'required|string|max:20',
-            'direccion'=>'required|string|max:30',
+            'razon_social'=>'required|string|max:30',
+            'nit'=>'required|string|max:25',
+            'direccion'=>'required|string|max:40',
             'telefono' => 'required|string|max:20',
             'correo'=>'required|email',
             // Agrega más validaciones si lo necesitas

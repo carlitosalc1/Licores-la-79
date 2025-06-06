@@ -59,6 +59,7 @@ export interface User {
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;
+
 //Cliente
 export interface Cliente {
     id: number;
@@ -106,26 +107,30 @@ export interface Rol {
 //Compra
 export interface Compra {
   id: number;
-  fecha: Date;
-  total: number;
-  estado: 'pagado' | 'cancelada';
   proveedor_id: number;
-  proveedor: {
-  razon_social: string;
-  };
+  proveedor?: Proveedor; // Asegúrate de que esta relación esté cargada desde el backend
   user_id: number;
-  user: {
-  name: string;
-  };
+  user?: Usuario; // Asegúrate de que esta relación esté cargada desde el backend
+  fecha_compra: string; // Fecha en formato string (ej: "YYYY-MM-DD")
+  total: number; // El total final de la compra (subtotal + IVA)
+  estado: string;
+  detalle_compras?: DetalleCompra[]; // Relación, opcional si no la necesitas cargar aquí
 }
 //DetalleCompra
 export interface DetalleCompra {
-  id: number;
-  compra: { id: number };
-  producto: { nombre: string };
+  id?: number;
+  compra_id: number;
+  producto_id: number;
   cantidad: number;
   precio_unitario: number;
   subtotal: number;
+  impuesto_iva: number;
+  producto?: {
+    id: number;
+    nombre: string;
+    precio_compra: number;
+    // ...
+  };
 }
 //DetalleVenta
 export interface DetalleVenta {
@@ -140,7 +145,6 @@ export interface DetalleVenta {
     subtotal: number;
     impuesto_iva: number;
     venta: Venta;
-
 }
 
 //Venta
@@ -186,7 +190,7 @@ export interface Venta {
       nombre: string
     }
     cantidad: number
-    precio: number
+    precio_unitario: number
   }[]
 }
 //pago
@@ -210,4 +214,20 @@ export interface Pago {
 
     };
 }
+//Detalle Factura
+interface DetalleFactura{
+    id: number;
+    factura_id: number;
+    producto_id: number;
+    cantidad: number;
+    precio_unitario: number;
+    subtotal: number;
+    impuesto_iva: number;
+    factura: Factura;
+    producto: Producto;
+}
+//factura
+interface Factura{
+}
+
 
