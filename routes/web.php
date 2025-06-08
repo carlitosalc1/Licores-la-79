@@ -73,9 +73,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('pagos', PagoController::class);
 
     // Inventario
-    Route::resource('inventarios', InventarioController::class);
+    Route::resource('inventarios', InventarioController::class)->except(['show']);
+    Route::get('/inventarios/stock/{productId}', [InventarioController::class, 'getStock'])->name('inventarios.stock');
 
     // Reportes
+    Route::resource('reportes', ReporteController::class)->except(['show']);
     Route::get('/reportes/ventas', [ReporteController::class, 'ventas'])->name('reportes.ventas');
     Route::get('/reportes/inventario', [ReporteController::class, 'inventario'])->name('reportes.inventario');
     Route::get('/reportes/compras', [ReporteController::class, 'compras'])->name('reportes.compras');

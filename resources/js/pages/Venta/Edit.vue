@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { type BreadcrumbItem } from '@/types';
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import InputError from '@/components/InputError.vue';

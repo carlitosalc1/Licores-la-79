@@ -59,9 +59,9 @@ const deleteVenta = (id: number) => {
 const getEstadoVariant = (estado: string): "default" | "destructive" | "outline" | "secondary" | null | undefined => {
   switch (estado.toLowerCase()) {
     case 'pagado':
-      return 'default'      // O 'secondary', si quieres algo más visible
+      return 'default'
     case 'pendiente':
-      return 'outline'      // Alternativa visual
+      return 'outline'
     case 'cancelada':
       return 'destructive'
     default:

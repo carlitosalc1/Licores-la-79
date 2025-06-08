@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Inventario extends Model
 {
-    protected $table = 'inventario';
+    protected $table = 'inventarios';
 
     protected $fillable = [
         'producto_id',
@@ -17,6 +17,7 @@ class Inventario extends Model
         'tipo_movimiento',
         'fecha_actualizacion',
     ];
+
 
     public function producto()
     {

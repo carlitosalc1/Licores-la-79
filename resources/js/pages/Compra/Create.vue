@@ -5,6 +5,8 @@ import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { Proveedor, Producto, } from '@/types';
 import InputError from '@/components/InputError.vue';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 
 interface Usuario {
   id: number;
@@ -22,13 +24,13 @@ const form = useForm({
   user_id: props.usuario.id,
   estado: 'pagado',
   detalles: [] as {
-  producto_id: number;
-  nombre: string;
-  cantidad: number;
-  precio: number;
-  subtotal: number;
-  impuesto_iva: number; // Assuming 19% IVA based on your calculation
-  total: number;
+    producto_id: number;
+    nombre: string;
+    cantidad: number;
+    precio: number;
+    subtotal: number;
+    impuesto_iva: number; // Assuming 19% IVA based on your calculation
+    total: number;
   }[],
   total_iva: 0,
   total_compra: 0,
@@ -132,7 +134,8 @@ const formatCurrency = (value: number) => {
           <form @submit.prevent="submit" class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2" for="proveedor_id">Proveedor</label>
+                <label class="block font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  for="proveedor_id">Proveedor</label>
                 <select id="proveedor_id" v-model="form.proveedor_id"
                   class="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all">
                   <option disabled :value="null">Seleccione un Proveedor</option>
@@ -186,43 +189,44 @@ const formatCurrency = (value: number) => {
               </div>
 
               <div class="overflow-x-auto rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                <table class="min-w-full w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                  <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-zinc-700 dark:text-gray-400">
-                    <tr>
-                      <th class="p-3 text-left">Producto</th>
-                      <th class="p-3 text-center">Cantidad</th>
-                      <th class="p-3 text-right">Precio Unitario</th>
-                      <th class="p-3 text-right">Subtotal</th>
-                      <th class="p-3 text-right">IVA (19%)</th>
-                      <th class="p-3 text-right">Total</th>
-                      <th class="p-3 text-center">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-if="form.detalles.length === 0">
-                      <td colspan="7" class="p-4 text-center text-gray-500 dark:text-gray-400">No hay productos agregados.</td>
-                    </tr>
-                    <tr v-for="(detalle, index) in form.detalles" :key="index"
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead class="p-3 text-left">Producto</TableHead>
+                      <TableHead class="p-3 text-center">Cantidad</TableHead>
+                      <TableHead class="p-3 text-right">Precio Unitario</TableHead>
+                      <TableHead class="p-3 text-right">Subtotal</TableHead>
+                      <TableHead class="p-3 text-right">IVA (19%)</TableHead>
+                      <TableHead class="p-3 text-right">Total</TableHead>
+                      <TableHead class="p-3 text-center">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow v-if="form.detalles.length === 0">
+                      <TableCell colspan="7" class="p-4 text-center text-gray-500 dark:text-gray-400">No hay
+                        productos agregados.</TableCell>
+                    </TableRow>
+                    <TableRow v-for="(detalle, index) in form.detalles" :key="index"
                       class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                      <td class="p-3">{{ detalle.nombre }}</td>
-                      <td class="p-3 text-center">
+                      <TableCell class="p-3">{{ detalle.nombre }}</TableCell>
+                      <TableCell class="p-3 text-center">
                         <input type="number" v-model.number="detalle.cantidad" min="1"
                           class="w-20 text-center rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 p-2 focus:ring-1 focus:ring-cyan-500 focus:border-transparent transition-all"
                           @input="recalcularTotales(index)" />
-                      </td>
-                      <td class="p-3 text-right">{{ formatCurrency(detalle.precio) }}</td>
-                      <td class="p-3 text-right">{{ formatCurrency(detalle.subtotal) }}</td>
-                      <td class="p-3 text-right">{{ formatCurrency(detalle.impuesto_iva) }}</td>
-                      <td class="p-3 text-right">{{ formatCurrency(detalle.total) }}</td>
-                      <td class="p-3 text-center">
+                      </TableCell>
+                      <TableCell class="p-3 text-right">{{ formatCurrency(detalle.precio) }}</TableCell>
+                      <TableCell class="p-3 text-right">{{ formatCurrency(detalle.subtotal) }}</TableCell>
+                      <TableCell class="p-3 text-right">{{ formatCurrency(detalle.impuesto_iva) }}</TableCell>
+                      <TableCell class="p-3 text-right">{{ formatCurrency(detalle.total) }}</TableCell>
+                      <TableCell class="p-3 text-center">
                         <button type="button" @click="form.detalles.splice(index, 1)"
                           class="font-medium text-red-600 dark:text-red-500 hover:underline">
                           Eliminar
                         </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
               </div>
 
               <div class="text-right mt-6 space-y-2 text-gray-800 dark:text-white">
@@ -243,7 +247,8 @@ const formatCurrency = (value: number) => {
                 Cancelar
               </button>
             </div>
-            <div v-if="form.hasErrors" class="mt-4 p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 rounded-lg">
+            <div v-if="form.hasErrors"
+              class="mt-4 p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 rounded-lg">
               <h3 class="font-semibold mb-2">Se encontraron los siguientes errores:</h3>
               <ul class="list-disc list-inside">
                 <li v-for="(error, key) in form.errors" :key="key">{{ error }}</li>

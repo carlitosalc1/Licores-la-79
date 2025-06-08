@@ -40,16 +40,6 @@ const mainNavItems: NavItem[] = [
         icon: Fish,
     },
     {
-        title: 'Venta',
-        href: '/ventas',
-        icon: Receipt,
-    },
-    {
-        title: 'Detalle de Venta',
-        href: '/detalle_ventas',
-        icon: ClipboardList,
-    },
-    {
         title: 'Compra',
         href: '/compras',
         icon: ShoppingCart,
@@ -57,6 +47,16 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Detalle de Compra',
         href: '/detalle_compras',
+        icon: ClipboardList,
+    },
+    {
+        title: 'Venta',
+        href: '/ventas',
+        icon: Receipt,
+    },
+    {
+        title: 'Detalle de Venta',
+        href: '/detalle_ventas',
         icon: ClipboardList,
     },
     {

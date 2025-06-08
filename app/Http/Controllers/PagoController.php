@@ -43,7 +43,15 @@ class PagoController extends Controller
      */
     public function store(StorePagoRequest $request)
     {
-        Pago::create($request->validated());
+       // Crear el pago
+        $pago = Pago::create($request->validated());
+
+        // Si el pago está asociado a una venta, actualizar su estado
+        if ($pago->venta_id) {
+            $venta = Venta::find($pago->venta_id);
+            $venta->estado = 'pagado';
+            $venta->save();
+        }
 
         return Redirect::route('pagos.index')->with('flash', ['success' => 'Pago registrado exitosamente.']);
     }
@@ -70,7 +78,14 @@ class PagoController extends Controller
     {
         $pago->update($request->validated());
 
-         return redirect()->route('pagos.index')
+        // Si el pago está asociado a una venta, actualizar su estado
+        if ($pago->venta_id) {
+            $venta = Venta::find($pago->venta_id);
+            $venta->estado = 'pagado';
+            $venta->save();
+        }
+
+        return redirect()->route('pagos.index')
                      ->with('flash', ['success' => 'Pago actualizado exitosamente.']);
     }
 

@@ -12,8 +12,8 @@ class Producto extends Model
         'precio_compra',
         'precio_venta',
         'unidad_medida',
-        'stock',
         'stock_minimo',
+        'stock',
         'categoria_producto_id'
     ];
      protected $casts = [
@@ -38,7 +38,7 @@ class Producto extends Model
 
     public function inventario()
     {
-        return $this->hasOne(Inventario::class);
+        return $this->hasMany(Inventario::class);
     }
 
     public function getStockActualAttribute()
