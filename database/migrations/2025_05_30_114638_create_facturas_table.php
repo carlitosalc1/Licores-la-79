@@ -10,6 +10,8 @@ return new class extends Migration
     {
         Schema::create('facturas', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained('users')->onDelete('restrict');
+            $table->foreignId('cliente_id')->nullable()->constrained('clientes')->onDelete('set null');
             $table->foreignId('venta_id')->unique()->constrained('ventas')->onDelete('cascade');
             $table->string('numero_factura')->unique();
             $table->date('fecha_emision')->useCurrent();

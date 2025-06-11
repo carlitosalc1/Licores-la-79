@@ -1,4 +1,6 @@
 import type { PageProps } from '@inertiajs/core';
+import { PageProps as InertiaPageProps } from '@inertiajs/vue3';
+import { ZiggyPartial } from 'ziggy-js';
 import type { LucideIcon } from 'lucide-vue-next';
 import type { Config } from 'ziggy-js';
 
@@ -6,9 +8,27 @@ export interface Auth {
     user: User;
 }
 
+// Interfaz para los mensajes flash
+export interface FlashMessages {
+    success?: string;
+    error?: string;
+    // Puedes añadir otros tipos de mensajes flash aquí si los usas
+    // info?: string;
+    // warning?: string;
+}
+
 export interface BreadcrumbItem {
-    title: string;
+
+    title?: string;
+    label?: string;
     href: string;
+    active?: boolean;
+}
+
+export interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
 }
 
 
@@ -25,6 +45,24 @@ export interface SharedData extends PageProps {
     auth: Auth;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
+}
+
+export interface SharedData extends InertiaPageProps {
+    auth: {
+        user: User;
+    };
+    ziggy: ZiggyPartial;
+    flash: FlashMessages; // ¡Aquí agregamos la propiedad flash!
+    // Cualquier otra propiedad compartida globalmente que tengas
+}
+
+// Opcional: Define tu ClientePageProps de forma que extienda SharedData
+export interface ClientePageProps extends SharedData {
+    clientes: {
+        data: Cliente[];
+        meta: any;
+        links: any;
+    };
 }
 
 export interface SharedData {
@@ -108,13 +146,13 @@ export interface Rol {
 export interface Compra {
   id: number;
   proveedor_id: number;
-  proveedor?: Proveedor; // Asegúrate de que esta relación esté cargada desde el backend
+  proveedor?: Proveedor;
   user_id: number;
-  user?: Usuario; // Asegúrate de que esta relación esté cargada desde el backend
-  fecha_compra: string; // Fecha en formato string (ej: "YYYY-MM-DD")
-  total: number; // El total final de la compra (subtotal + IVA)
+  user?: Usuario;
+  fecha_compra: string;
+  total: number;
   estado: string;
-  detalle_compras?: DetalleCompra[]; // Relación, opcional si no la necesitas cargar aquí
+  detalle_compras?: DetalleCompra[];
 }
 //DetalleCompra
 export interface DetalleCompra {
@@ -228,6 +266,20 @@ interface DetalleFactura{
 }
 //factura
 interface Factura{
+}
+interface Reporte {
+  id: number;
+  tipo_reporte: string;
+  fecha_inicio: string;
+  fecha_fin: string;
+  datos: {
+    total_productos?: number;
+    total_ventas?: number;
+    total_compras?: number;
+    fecha_generacion?: string;
+  };
+  user: { name: string } | null;
+  created_at: string;
 }
 
 

@@ -79,11 +79,11 @@ const mainNavItems: NavItem[] = [
         href: '/inventarios',
         icon: PackageOpen,
     },
-    {
-        title: 'Reporte',
-        href: '/reportes',
-        icon: ScrollText,
-    },
+    // {
+    //     title: 'Reporte',
+    //     href: '/reportes',
+    //     icon: ScrollText,
+    // },
     {
         title: 'Pago',
         href: '/pagos',

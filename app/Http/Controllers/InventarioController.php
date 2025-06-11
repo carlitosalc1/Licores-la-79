@@ -14,8 +14,6 @@ class InventarioController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
-
-        // Obtener movimientos de inventario con filtros y paginación
         $inventarios = Inventario::query()
             ->with(['producto', 'compra', 'venta'])
             ->when($search, function ($query, $search) {
@@ -130,31 +128,26 @@ class InventarioController extends Controller
             'cantidad_entrada' => ['nullable', 'integer', 'min:0'],
             'cantidad_salida' => ['nullable', 'integer', 'min:0'],
             'fecha_actualizacion' => ['required', 'date'],
-            'compra_id' => ['nullable', 'exists:compras,id'], // Si usas compras
-            'venta_id' => ['nullable', 'exists:ventas,id'],   // Si usas ventas
+            'compra_id' => ['nullable', 'exists:compras,id'],
+            'venta_id' => ['nullable', 'exists:ventas,id'],
         ];
 
         // Lógica de validación condicional para cantidades
         if ($request->input('tipo_movimiento') === 'entrada') {
             $rules['cantidad_entrada'] = ['required', 'integer', 'min:1'];
-            $rules['cantidad_salida'] = ['nullable', 'integer', 'in:0']; // No debe haber cantidad_salida
+            $rules['cantidad_salida'] = ['nullable', 'integer', 'in:0'];
         } elseif ($request->input('tipo_movimiento') === 'salida') {
             $rules['cantidad_salida'] = ['required', 'integer', 'min:1'];
-            $rules['cantidad_entrada'] = ['nullable', 'integer', 'in:0']; // No debe haber cantidad_entrada
+            $rules['cantidad_entrada'] = ['nullable', 'integer', 'in:0'];
         } elseif ($request->input('tipo_movimiento') === 'ajuste') {
-            // Para ajuste, se puede requerir al menos una de las dos cantidades
             $rules['cantidad_entrada'] = ['nullable', 'integer', 'min:0'];
             $rules['cantidad_salida'] = ['nullable', 'integer', 'min:0'];
-            // Opcional: Validar que al menos una cantidad sea > 0 para ajustes
-            // if ($request->input('cantidad_entrada') == 0 && $request->input('cantidad_salida') == 0) {
-            //     throw ValidationException::withMessages(['cantidad' => 'Para un ajuste, la cantidad de entrada o salida debe ser mayor a 0.']);
-            // }
+
         }
 
         $validatedData = $request->validate($rules);
 
-        // Iniciar una transacción de base de datos para asegurar la consistencia
-        // Si algo falla, todo se revierte.
+
         DB::beginTransaction();
 
         try {
@@ -167,8 +160,8 @@ class InventarioController extends Controller
             } elseif ($inventario->tipo_movimiento === 'salida') {
                 $producto->stock += $inventario->cantidad_salida;
             } elseif ($inventario->tipo_movimiento === 'ajuste') {
-                $producto->stock -= $inventario->cantidad_entrada; // Revertir entrada original
-                $producto->stock += $inventario->cantidad_salida; // Revertir salida original
+                $producto->stock -= $inventario->cantidad_entrada;
+                $producto->stock += $inventario->cantidad_salida;
             }
             $producto->save(); // Guardar el stock revertido temporalmente
 
@@ -176,12 +169,12 @@ class InventarioController extends Controller
             // **Actualizar el registro del movimiento de inventario**
             $inventario->producto_id = $validatedData['producto_id'];
             $inventario->tipo_movimiento = $validatedData['tipo_movimiento'];
-            $inventario->cantidad_entrada = $validatedData['cantidad_entrada'] ?? 0; // Asegura que sea 0 si es null
-            $inventario->cantidad_salida = $validatedData['cantidad_salida'] ?? 0;   // Asegura que sea 0 si es null
+            $inventario->cantidad_entrada = $validatedData['cantidad_entrada'] ?? 0;
+            $inventario->cantidad_salida = $validatedData['cantidad_salida'] ?? 0;
             $inventario->fecha_actualizacion = $validatedData['fecha_actualizacion'];
             $inventario->compra_id = $validatedData['compra_id'];
             $inventario->venta_id = $validatedData['venta_id'];
-            $inventario->save(); // Guardar los nuevos datos del movimiento
+            $inventario->save();
 
 
             // **Aplicar el efecto del movimiento editado**
@@ -197,14 +190,14 @@ class InventarioController extends Controller
                 }
                 $producto->stock -= $inventario->cantidad_salida;
             } elseif ($inventario->tipo_movimiento === 'ajuste') {
-                $producto->stock += $inventario->cantidad_entrada; // Aplicar nueva entrada
+                $producto->stock += $inventario->cantidad_entrada;
                 // Validación para stock negativo para el ajuste de salida
                 if ($producto->stock < $inventario->cantidad_salida) {
                      throw ValidationException::withMessages([
                         'cantidad_salida' => 'El ajuste de salida resultaría en stock negativo. Stock actual después de entradas: ' . $producto->stock
                     ]);
                 }
-                $producto->stock -= $inventario->cantidad_salida; // Aplicar nueva salida
+                $producto->stock -= $inventario->cantidad_salida;
             }
 
             $producto->save(); // Guardar el stock final después de aplicar el movimiento editado

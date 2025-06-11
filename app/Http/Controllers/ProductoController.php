@@ -38,7 +38,7 @@ class ProductoController extends Controller
         'precio_venta' => str_replace('.', '', $request->precio_venta),
         ]);
        $validated = $request->validate([
-            'nombre' => 'required|string|max:40',
+            'nombre' => 'required|string|max:50',
             'descripcion' => 'nullable|string|max:300',
             'precio_compra' => 'required|numeric|min:0',
             'precio_venta' => 'required|numeric|min:0',
@@ -71,7 +71,7 @@ class ProductoController extends Controller
         'precio_venta' => str_replace('.', '', $request->precio_venta),
         ]);
         $validated = $request->validate([
-            'nombre' => 'required|string|max:40',
+            'nombre' => 'required|string|max:50',
             'descripcion' => 'nullable|string|max:300',
             'precio_compra' => 'required|numeric|min:0',
             'precio_venta' => 'required|numeric|min:0',

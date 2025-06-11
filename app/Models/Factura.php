@@ -11,6 +11,7 @@ class Factura extends Model
     protected $fillable = [
         'venta_id',
         'user_id',
+        'cliente_id',
         'numero_factura',
         'fecha_emision',
         'total',
@@ -47,6 +48,11 @@ class Factura extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function cliente()
+    {
+        return $this->belongsTo(Cliente::class);
     }
 
     public function pago()

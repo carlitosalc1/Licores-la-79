@@ -17,19 +17,17 @@ use App\Http\Controllers\FacturaController;
 use App\Http\Controllers\DetalleFacturaController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\InventarioController;
-use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\ReporteController; // Asegúrate de que esta importación esté presente
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
-Route::get('dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    // Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard'); cunado ya tenga el dashboard controller
+    // Ruta del Dashboard (esta es la correcta y única)
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Clientes
     Route::resource('clientes', ClienteController::class);
@@ -44,8 +42,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Ventas
     Route::resource('ventas', VentaController::class);
-
-    Route::get('/ventas/{venta}/factura', [VentaController::class, 'generarFactura'])->name('ventas.factura');
+    Route::get('/ventas/{venta}/factura', [VentaController::class, 'generarFactura'])->name('ventas.factura'); // Ya está correcto
 
     // Detalle de Ventas
     Route::resource('detalle_ventas', DetalleVentaController::class);
@@ -68,7 +65,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Detalles de Facturas
     Route::resource('detalle_facturas', DetalleFacturaController::class);
 
-
     // Pagos
     Route::resource('pagos', PagoController::class);
 
@@ -76,12 +72,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('inventarios', InventarioController::class)->except(['show']);
     Route::get('/inventarios/stock/{productId}', [InventarioController::class, 'getStock'])->name('inventarios.stock');
 
-    // Reportes
-    Route::resource('reportes', ReporteController::class)->except(['show']);
-    Route::get('/reportes/ventas', [ReporteController::class, 'ventas'])->name('reportes.ventas');
-    Route::get('/reportes/inventario', [ReporteController::class, 'inventario'])->name('reportes.inventario');
-    Route::get('/reportes/compras', [ReporteController::class, 'compras'])->name('reportes.compras');
-    Route::get('/reportes/facturas', [ReporteController::class, 'facturas'])->name('reportes.facturas');
+    // Grupo de Rutas para Reportes (este bloque está correcto)
+    Route::prefix('reportes')->name('reportes.')->group(function () {
+        // Ruta principal para "Reportes" en el menú, que redirige a Ventas por Fecha
+        Route::get('/', [ReporteController::class, 'ventasPorFecha'])->name('index'); // Ajusta a la ruta que quieras que se muestre por defecto
+
+        // Rutas para los reportes específicos
+        Route::get('/ventas', [ReporteController::class, 'ventasPorFecha'])->name('ventas');
+        Route::get('/inventario', [ReporteController::class, 'inventarioActual'])->name('inventario');
+        Route::get('/compras', [ReporteController::class, 'comprasPorProveedor'])->name('compras');
+        Route::get('/productos-vendidos', [ReporteController::class, 'productosMasVendidos'])->name('productos-vendidos');
+
+        // Rutas de exportación
+        Route::get('/ventas/exportar-excel', [ReporteController::class, 'exportarVentasExcel'])->name('ventas.exportarExcel');
+        Route::get('/ventas/exportar-pdf', [ReporteController::class, 'exportarVentasPdf'])->name('ventas.exportarPdf');
+
+        Route::get('/inventario/exportar-excel', [ReporteController::class, 'exportarInventarioExcel'])->name('inventario.exportarExcel');
+        Route::get('/inventario/exportar-pdf', [ReporteController::class, 'exportarInventarioPdf'])->name('inventario.exportarPdf');
+
+        Route::get('/compras/exportar-excel', [ReporteController::class, 'exportarComprasExcel'])->name('compras.exportarExcel');
+        Route::get('/compras/exportar-pdf', [ReporteController::class, 'exportarComprasPdf'])->name('compras.exportarPdf');
+
+        Route::get('/productos-vendidos/exportar-excel', [ReporteController::class, 'exportarProductosVendidosExcel'])->name('productos-vendidos.exportarExcel');
+        Route::get('/productos-vendidos/exportar-pdf', [ReporteController::class, 'exportarProductosVendidosPdf'])->name('productos-vendidos.exportarPdf');
+        //usuario
+        Route::resource('usuarios', UsuarioController::class);
+    });
 
 });
 

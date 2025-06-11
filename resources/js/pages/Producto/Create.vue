@@ -95,7 +95,6 @@ function submit() {
                   <option value="Galón">Galón</option>
                   <option value="Litros">Litros</option>
                   <option value="Mililitros">Mililitros</option>
-                  <option value="Panal">Panal</option>
                   </select>
               <div v-if="form.errors.unidad_medida" class="text-red-500 text-sm mt-2">
                       {{ form.errors.unidad_medida }}

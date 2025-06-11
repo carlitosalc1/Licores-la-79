@@ -286,7 +286,7 @@ class VentaController extends Controller
 
     private function generarNumeroFactura(): string
     {
-        return 'F-' . str_pad(Factura::count() + 1, 6, '0', STR_PAD_LEFT);
+        return 'F-' . str_pad(Factura::count() + 1, 12, '0', STR_PAD_LEFT);
     }
 
     public function generarFactura(Venta $venta)
